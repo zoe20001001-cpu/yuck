@@ -1,0 +1,26 @@
+name: Save Uploaded Image
+
+on:
+  repository_dispatch:
+    types: [upload_image]
+
+jobs:
+  save-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Add uploaded image
+        run: |
+          echo "${{ github.event.client_payload.content }}" | base64 --decode > images/${{ github.event.client_payload.filename }}
+
+      - name: Commit & push
+        run: |
+          git config user.email "bot@example.com"
+          git config user.name "Upload Bot"
+          git add images/${{ github.event.client_payload.filename }}
+          git commit -m "Add image ${{ github.event.client_payload.filename }}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.UPLOAD_BOT }}
