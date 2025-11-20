@@ -99,69 +99,45 @@
 <body>
   <!-- 上传图片模块开始 -->
 
-<h2>上传图片（仅本地预览）</h2>
-
-<div class="controls">
-  <input type="file" id="upload" accept="image/*" multiple>
-  <button id="clearBtn">清空所有图片</button>
-  <div style="font-size:13px;color:#666;margin-top:6px;">
-    选择图片后会显示在页面中，只保存在你本地浏览器，刷新会消失。
-  </div>
-</div>
-
-<div id="gallery" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;"></div>
+<!-- 图片上传（GitHub Action 自动存图） -->
+<h2>上传图片</h2>
+<input type="file" id="upload" accept="image/*">
+<button id="sendPic">上传</button>
 
 <script>
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 单张最大 5MB
-  const MAX_FILES = 20; // 最多允许20张
+document.getElementById("sendPic").onclick = async () => {
+  const file = document.getElementById("upload").files[0];
+  if (!file) return alert("请先选择图片！");
 
-  const input = document.getElementById('upload');
-  const gallery = document.getElementById('gallery');
-  const clearBtn = document.getElementById('clearBtn');
+  const base64 = await fileToBase64(file);
 
-  input.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    const existing = gallery.querySelectorAll('img').length;
-    if (existing + files.length > MAX_FILES) {
-      alert('最多允许显示 ' + MAX_FILES + ' 张图片，请先清空或减少数量。');
-      return;
-    }
-
-    files.forEach(file => {
-      if (!file.type.startsWith('image/')) return;
-      if (file.size > MAX_FILE_SIZE) {
-        alert('文件 "' + file.name + '" 太大（>5MB），已跳过。');
-        return;
+  await fetch("https://api.github.com/repos/zoe20001001-cpu/yuck/dispatches", {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer ACTION_TOKEN",   // 稍后替换
+    },
+    body: JSON.stringify({
+      event_type: "upload_image",
+      client_payload: {
+        filename: file.name,
+        content: base64
       }
-
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const img = document.createElement('img');
-        img.src = evt.target.result;
-        img.alt = file.name;
-        img.style.width = "200px";
-        img.style.height = "auto";
-        img.style.borderRadius = "8px";
-        img.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
-        img.style.cursor = "pointer";
-
-        img.addEventListener('click', () => {
-          window.open(img.src, '_blank');
-        });
-
-        gallery.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = '';
+    })
   });
 
-  clearBtn.addEventListener('click', () => {
-    gallery.innerHTML = '';
+  alert("上传成功！等待 GitHub 自动刷新。");
+};
+
+function fileToBase64(file) {
+  return new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      res(reader.result.split(",")[1]);
+    };
+    reader.readAsDataURL(file);
   });
+}
 </script>
 
 <!-- 上传图片模块结束 -->
@@ -212,6 +188,7 @@
 <!-- 留言板模块结束 -->
 
 </body>
+
 
 
 
